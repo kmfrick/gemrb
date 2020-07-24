@@ -322,22 +322,20 @@ PathNode *Map::FindPath(const Point &s, const Point &d, unsigned int size, unsig
 			bool childBlocked = !(childBlockStatus & (PATH_MAP_PASSABLE | PATH_MAP_ACTOR | PATH_MAP_TRAVEL));
 			if (childBlocked) continue;
 
-			// Weighted heuristic. Finds sub-optimal paths but should be quite a bit faster
-			const float HEURISTIC_WEIGHT = 1.5;
 			SearchmapPoint smptCurrent(nmptCurrent.x / 16, nmptCurrent.y / 12);
 			NavmapPoint nmptParent = parents[smptCurrent.y * Width + smptCurrent.x];
 			unsigned short oldDist = distFromStart[smptChild.y * Width + smptChild.x];
 			// Theta-star path if there is LOS
 			if (IsWalkableTo(nmptParent, nmptChild, flags & PF_ACTORS_ARE_BLOCKING, caller)) {
 				SearchmapPoint smptParent(nmptParent.x / 16, nmptParent.y / 12);
-				unsigned short newDist = distFromStart[smptParent.y * Width + smptParent.x] + Distance(smptParent, smptChild);
+				unsigned short newDist = distFromStart[smptParent.y * Width + smptParent.x] + Distance(nmptParent, nmptChild);
 				if (newDist < oldDist) {
 					parents[smptChild.y * Width + smptChild.x] = nmptParent;
 					distFromStart[smptChild.y * Width + smptChild.x] = newDist;
 				}
 			// Fall back to A-star path
 			} else if (IsWalkableTo(nmptCurrent, nmptChild, flags & PF_ACTORS_ARE_BLOCKING, caller)) {
-				unsigned short newDist = distFromStart[smptCurrent.y * Width + smptCurrent.x] + Distance(smptCurrent, smptChild);
+				unsigned short newDist = distFromStart[smptCurrent.y * Width + smptCurrent.x] + Distance(nmptCurrent, nmptChild);
 				if (newDist < oldDist) {
 					parents[smptChild.y * Width + smptChild.x] = nmptCurrent;
 					distFromStart[smptChild.y * Width + smptChild.x] = newDist;
@@ -346,14 +344,14 @@ PathNode *Map::FindPath(const Point &s, const Point &d, unsigned int size, unsig
 
 			if (distFromStart[smptChild.y * Width + smptChild.x] < oldDist) {
 				// Calculate heuristic
-				int xDist = smptChild.x - smptDest.x;
-				int yDist = smptChild.y - smptDest.y;
+				int xDist = nmptChild.x - nmptDest.x;
+				int yDist = nmptChild.y - nmptDest.y;
 				// Tie-breaking used to smooth out the path
-				int dxCross = smptDest.x - smptSource.x;
-				int dyCross = smptDest.y - smptSource.y;
-				int crossProduct = std::abs(xDist * dyCross - yDist * dxCross) >> 3;
+				//int dxCross = nmptDest.x - nmptSource.x;
+				//int dyCross = nmptDest.y - nmptSource.y;
+				//double crossProduct = std::abs(xDist * dyCross - yDist * dxCross) * 0.0001;
 				double distance = std::sqrt(xDist * xDist + yDist * yDist);
-				double heuristic = HEURISTIC_WEIGHT * (distance + crossProduct);
+				double heuristic = distance;
 				double estDist = distFromStart[smptChild.y * Width + smptChild.x] + heuristic;
 				PQNode newNode(nmptChild, estDist);
 				open.emplace(newNode);
